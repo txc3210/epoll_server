@@ -4,7 +4,7 @@ OBJ_PATH = $(CUR_PATH)obj
 CC = g++ -g -c 
 CFLAGS = `mysql_config --cflags --libs` -luuid -I./inc -L./lib -lssl -lcrypto -ldl -lpthread
 
-objects = main.o
+objects = main.o log.o
 
 target = ./epoll_server
 
