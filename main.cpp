@@ -78,8 +78,9 @@ int process_msg(int sockfd, char *buf, int & total_num)
 	if(strncmp(buf, "POST", 4) != 0)
 	{
 		std::cout << "This is not a GET or POST mothed" << std::endl;
-		total_num = 0;
-		memset(buf, 0, BUF_SIZE);
+		//total_num = 0;
+		//memset(buf, 0, BUF_SIZE);
+		close(sockfd);
 		return 0;
 	}
 	char *pHeaderEnd = strstr(buf,"\r\n\r\n");
@@ -125,16 +126,10 @@ int process_msg(int sockfd, char *buf, int & total_num)
 	//localtime_s(&tt, &stm);
 	if(ContentLength>0)
 	{
-		const char *pBody = pHeaderEnd+4;
-		//LogI("[%d-%02d-%02d %02d:%02d:%02d]",
-		//		(1900+p->tm_year),(1+p->tm_mon),p->tm_mday,
-		//		(0+p->tm_hour),p->tm_min,p->tm_sec);
+		const char *pBody = static_cast<const char*>( pHeaderEnd + 4 );
+		
 		LogI("ThreadID=0x%X,HttpRecv:%s\r\n",std::this_thread::get_id(), pBody);
-				/*
-		LogI("[%d-%02d-%02d %02d:%02d:%02d] Http recv:%s\n",
-				(1900+p->tm_year),(1+p->tm_mon),p->tm_mday,
-				(0+p->tm_hour),p->tm_min,p->tm_sec,pBody);*/
-		//HttpPost(sockfd,pBody,&info);
+				
 		
 		memset(buf, 0, BUF_SIZE);
 		total_num = 0;
@@ -173,6 +168,8 @@ void et(epoll_event* events, int number, int epollfd, int listenfd)
 			}else
 			{
 				std::cout << "sockfd is already int the map" << std::endl;
+				buf = sock_map[connfd];
+				memset(buf, 0, BUF_SIZE);
 			}			
 			
 			addfd(epollfd, connfd, true);
@@ -192,95 +189,14 @@ void et(epoll_event* events, int number, int epollfd, int listenfd)
 						std::cout << "read data over" << std::endl;
 						printf("read %d bytes: %s\n", total_num, buf);
 						
-						process_msg(sockfd, buf, total_num);
+						process_msg(sockfd, buf, total_num);					
 						
-						/*
-						if(total_num < 3)
-							break;
-						if(strncmp(buf, "GET", 3) == 0)
-						{
-							std::cout << "Http GET mothod" << std::endl;
-							total_num = 0;
-							memset(buf, 0, BUF_SIZE);
-							break;
-						}
-						if(total_num < 4)
-							break;
-						if(strncmp(buf, "POST", 4) != 0)
-						{
-							std::cout << "This is not a GET or POST mothed" << std::endl;
-							total_num = 0;
-							memset(buf, 0, BUF_SIZE);
-							break;
-						}
-						char *pHeaderEnd = strstr(buf,"\r\n\r\n");
-						if(pHeaderEnd == nullptr)
-						{
-							std::cout << "Http header dose not end" << std::endl;
-							break;
-						}
-					
-						std::string header;
-						header.append(buf,(int)(pHeaderEnd-buf+4));	
-						
-						std::string strContentLength;
-						bool bRet = GetHeaderInfo(header,"Content-Length",strContentLength);
-						if(!bRet)
-						{
-							LogI("there is no Content-Length in header,exit thread\n");
-							break;
-						}
-						int ContentLength = atoi(strContentLength.c_str());
-						//printf("Content-Length:%s:%ld\n",strContentLength.c_str(),ContentLength);
-						if(total_num - (int)(pHeaderEnd-buf+4) < ContentLength)
-						{
-							LogI("recv data is not enough,continue to recv\n");
-							break;
-						}
-						//printf("http recv completed\n");
-		
-		
-						std::transform(header.begin(), header.end(), header.begin(),::tolower);// to lower case
-						std::string strConnection;
-						bRet = GetHeaderInfo(header,"connection",strConnection);
-						if(!bRet)
-						{
-							LogI("there is no connection in header,exit thread\n");
-							break;
-						}
-						//printf("connection:%s\n",strConnection.c_str());
-						time_t tt;
-						struct tm stm;
-		
-						time(&tt);		
-						//localtime_s(&tt, &stm);
-						if(ContentLength>0)
-						{
-							const char *pBody = pHeaderEnd+4;
-							//LogI("[%d-%02d-%02d %02d:%02d:%02d]",
-							//		(1900+p->tm_year),(1+p->tm_mon),p->tm_mday,
-							//		(0+p->tm_hour),p->tm_min,p->tm_sec);
-							LogI("ThreadID=0x%X,HttpRecv:%s\r\n",std::this_thread::get_id(), pBody);
-									
-							//HttpPost(sockfd,pBody,&info);
-							total_num = 0;
-							if(strConnection=="keep-alive" || strConnection=="keepalive")
-								break;
-							else if(strConnection=="close")
-							{
-								close(sockfd);
-								break;
-							}
-							break;
-			
-						}
-						break;
-						*/
 					}
 					//close(sockfd);
 					break;
 				}else if(num == 0)
 				{
+					std::cout << "socket has been closeed"  << std::endl;
 					close(sockfd);
 				}else
 				{
